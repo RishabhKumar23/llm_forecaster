@@ -1,41 +1,43 @@
+'use client'
 import { useState } from 'react'
 
-export default function ForecasterInput() {
-    const [input, setInput] = useState('')
-    const [result, setResult] = useState<any>(null)
+export default function ForecasterInput({ marketId }: { marketId: string }) {
+    const [question, setQuestion] = useState('')
+    const [response, setResponse] = useState('')
     const [loading, setLoading] = useState(false)
 
-    async function handleSubmit() {
+    const handleSubmit = async () => {
         setLoading(true)
         const res = await fetch('/api/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: input }),
+            body: JSON.stringify({ id: marketId, question }),
         })
         const data = await res.json()
-        setResult(data)
+        setResponse(data.answer)
         setLoading(false)
     }
 
     return (
-        <div>
-            <textarea
-                className="w-full border rounded p-2"
-                rows={3}
-                placeholder="Will there be a ceasefire in Gaza in 2025?"
-                value={input}
-                onChange={e => setInput(e.target.value)}
+        <div className="mt-6">
+            <input
+                className="border p-2 w-full mb-2"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Ask the LLM about this market..."
             />
             <button
+                className="bg-blue-600 text-white px-4 py-2 rounded"
                 onClick={handleSubmit}
-                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-xl"
                 disabled={loading}
-            >{loading ? 'Thinking...' : 'Ask Gemini'}</button>
+            >
+                {loading ? 'Thinking...' : 'Ask'}
+            </button>
 
-            {result && (
-                <div className="mt-4 bg-white shadow p-4 rounded-xl">
-                    <p className="font-semibold">Forecast: {result.answer} ({result.confidence}%)</p>
-                    <p className="text-sm mt-1">{result.explanation}</p>
+            {response && (
+                <div className="mt-4 p-3 bg-gray-100 rounded">
+                    <p className="font-semibold">LLM Response:</p>
+                    <p>{response}</p>
                 </div>
             )}
         </div>

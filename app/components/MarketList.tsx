@@ -1,43 +1,52 @@
-// Server Component – No "use client"
+'use client'
+
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 type Market = {
-    id: string
+    event_id: string
     title: string
-    ig_prob: number
-    pm_prob: number
-    delta: number
+    description: string
 }
 
-async function getMarkets(): Promise<{ markets: Market[] }> {
-    const res = await fetch('http://localhost:3000/api/markets', {
-        next: { revalidate: 300 }, // revalidate every 5 minutes (optional)
-    })
+export default function MarketList() {
+    const [markets, setMarkets] = useState<Market[]>([])
+    const [loading, setLoading] = useState(true)
 
-    if (!res.ok) {
-        throw new Error('Failed to fetch markets')
-    }
+    useEffect(() => {
+        const fetchMarkets = async () => {
+            try {
+                const res = await fetch('/api/markets')
+                const data = await res.json()
 
-    return res.json()
-}
+                // Use data.items, fallback to [] if missing
+                const items = Array.isArray(data?.items) ? data.items : []
+                setMarkets(items)
+            } catch (error) {
+                console.error('Error fetching markets:', error)
+                setMarkets([])
+            } finally {
+                setLoading(false)
+            }
+        }
 
-export default async function MarketList() {
-    const data = await getMarkets()
+        fetchMarkets()
+    }, [])
+
+    if (loading) return <p className="text-gray-500">Loading markets...</p>
+    if (markets.length === 0) return <p>No markets found.</p>
 
     return (
-        <div className="grid gap-4">
-            {data.markets.map((m) => (
-                <div key={m.id} className="bg-white shadow p-4 rounded-xl">
-                    <h2 className="text-lg font-semibold">{m.title}</h2>
-                    <div className="text-sm">
-                        IG: {m.ig_prob.toFixed(1)}% | PM: {m.pm_prob.toFixed(1)}%
-                    </div>
-                    <div
-                        className={`text-sm font-bold ${Math.abs(m.delta) > 5 ? 'text-red-500' : 'text-gray-600'
-                            }`}
-                    >
-                        Δ {m.delta.toFixed(1)}%
-                    </div>
-                </div>
+        <div className="space-y-4">
+            {markets.map((market) => (
+                <Link
+                    key={market.event_id}
+                    href={`/market/${market.event_id}`}
+                    className="block border rounded-xl p-4 shadow-sm hover:shadow-md transition"
+                >
+                    <h2 className="text-lg font-semibold">{market.title}</h2>
+                    <p className="text-sm text-gray-600 line-clamp-2">{market.description}</p>
+                </Link>
             ))}
         </div>
     )

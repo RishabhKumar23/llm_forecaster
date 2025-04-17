@@ -35,3 +35,75 @@ llm_forecaster/
 │   ├── vercel.svg
 │   └── window.svg
 └── tsconfig.json
+
+
+https://ifgames.win/api/v2/validator/events/{"ecSRe98hUGVDm97KP1WqkYQPRGqPRL52OVwdYrahNUBuVPj69j5tLvJNsz8FaTEzFZDjrhtwlUnE75sNSQoikASC83sz1lnXJe1VKtsl2VJK6XQ7NUwWDVYV30bL6XAWeGuZ90guYHK8osOqF5kNHv0E1cQr1Hkj5DCjwsRKj0ywUQbAw2JR2OYu8cv6gxcTZHuED7uEfHxSt6iLTvD7602Y19wjiFaEGtvaFvGEpleEVEN9Grm2fSbzR5lxahjk"}/community_prediction
+
+
+https://ifgames.win/api/v2/validator/events/{afbc269a-c8c7-43fc-807f-fb35369bf2b0}/predictions
+
+
+
+temp
+'use client'
+
+import { useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
+interface Market {
+  event_id: string
+  title: string
+  description: string
+  cutoff: number
+  start_date: number
+  end_date: number
+  created_at: number
+  answer: string | null
+}
+
+export default function MarketDetail() {
+  const { id } = useParams()
+  const [market, setMarket] = useState<Market | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchMarket = async () => {
+      try {
+        const res = await fetch('/api/markets')
+        if (!res.ok) throw new Error('Failed to fetch markets')
+
+        const data = await res.json()
+        const found = data.items.find((m: Market) => m.event_id === id)
+
+        if (found) {
+          setMarket(found)
+        } else {
+          setError('Market not found')
+        }
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (id) fetchMarket()
+  }, [id])
+
+  if (loading) return <div className="p-4">Loading market details...</div>
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>
+  if (!market) return null
+
+  return (
+    <div className="p-4">
+      <h1 className="text-3xl font-bold mb-4">{market.title}</h1>
+      <p className="text-gray-700 mb-2">{market.description}</p>
+      <p className="text-sm text-gray-500">Market ID: {market.event_id}</p>
+      <p className="text-sm text-gray-500">Start: {new Date(market.start_date * 1000).toLocaleString()}</p>
+      <p className="text-sm text-gray-500">End: {new Date(market.end_date * 1000).toLocaleString()}</p>
+      <p className="text-sm text-gray-500">Cutoff: {new Date(market.cutoff * 1000).toLocaleString()}</p>
+      <p className="text-sm text-gray-500">Answer: {market.answer ?? 'Unresolved'}</p>
+    </div>
+  )
+}
