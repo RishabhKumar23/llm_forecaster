@@ -49,7 +49,7 @@ export default function MarketDetail({ marketId }: { marketId: string }) {
 
         {/* Back Button */}
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/Marketlist')}
           className="bg-gray-300 text-gray-800 px-4 py-2 rounded-full mb-6 hover:bg-gray-400 transition"
         >
           &#8592; Back to Home
