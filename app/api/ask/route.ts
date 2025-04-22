@@ -7,24 +7,37 @@ export async function POST(req: Request) {
   const { question } = await req.json();
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  // Adjusted prompt to get only confidence score
-  const prompt = `Given the following market:\n\n${question}\n\nShould we trade? Provide only the confidence score (0–100) without an answer like "yes" or "no".`;
+  // Structured prompt for cleaner parsing
+  const prompt = `You are an expert prediction market analyst. Given the market description below:
+
+"${question}"
+
+Answer with:
+Confidence Score (0–100): <number only>
+Reason: <brief justification>`;
 
   try {
     console.log("🧠 Sending to Gemini...");
     const result = await model.generateContent(prompt);
-    const raw = result.response.text().trim(); // Get response text
+    const raw = result.response.text().trim();
 
-    console.log("📦 Gemini raw response:", raw); // Check the raw response
+    console.log("📦 Gemini raw response:", raw);
 
-    // Attempt to parse the confidence score
-    const confidence = parseFloat(raw);
-    if (isNaN(confidence)) {
-      throw new Error("Invalid confidence score");
+    // Extract confidence score and reason using regex
+    const scoreMatch = raw.match(/Confidence Score.*?(\d{1,3})/i);
+    const reasonMatch = raw.match(/Reason: (.*)/i);
+
+    if (!scoreMatch) {
+      throw new Error("Could not find a confidence score in the response");
     }
 
-    return new Response(JSON.stringify({ confidence }), { status: 200 });
-  } catch (e) {
+    const confidence = parseFloat(scoreMatch[1]);
+    const reason = reasonMatch ? reasonMatch[1].trim() : "No reason provided";
+
+    return new Response(JSON.stringify({ confidence, reason }), {
+      status: 200,
+    });
+  } catch (e: any) {
     console.error("❌ Gemini failed:", e);
     return new Response(
       JSON.stringify({

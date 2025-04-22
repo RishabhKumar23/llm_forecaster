@@ -1,19 +1,19 @@
-// app/market/[id]/page.tsx
-'use client'
+'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function MarketDetail({ marketId }: { marketId: string }) {
   const [confidence, setConfidence] = useState<number | null>(null);
+  const [reason, setReason] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [marketData, setMarketData] = useState<any>(null);
-  const router = useRouter(); // Initialize the router
+  const router = useRouter();
 
   useEffect(() => {
     const fetchMarketData = async () => {
       const response = await fetch(`/api/markets?id=${marketId}`);
       const data = await response.json();
-      setMarketData(data.items[0]);  // Assume the first item corresponds to the current market
+      setMarketData(data.items[0]);
     };
 
     fetchMarketData();
@@ -21,27 +21,30 @@ export default function MarketDetail({ marketId }: { marketId: string }) {
 
   useEffect(() => {
     const fetchTradeSignal = async () => {
+      if (!marketData) return;
+
       setLoading(true);
+
       const res = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: `Should we trade for market: ${marketId}?`
+          question: `${marketData.title}\n\n${marketData.description}`
         }),
       });
 
       const data = await res.json();
 
-      // Ensure confidence is a valid number
       if (data.confidence && !isNaN(data.confidence)) {
         setConfidence(data.confidence);
+        setReason(data.reason || '');
       }
 
       setLoading(false);
     };
 
     fetchTradeSignal();
-  }, [marketId]);
+  }, [marketData]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex justify-center items-center">
@@ -76,8 +79,17 @@ export default function MarketDetail({ marketId }: { marketId: string }) {
                   style={{ width: `${confidence || 0}%` }}
                 ></div>
               </div>
-              <span className="ml-4 text-xl font-semibold text-gray-800">{confidence !== null ? `${confidence}%` : "N/A"}</span>
+              <span className="ml-4 text-xl font-semibold text-gray-800">
+                {confidence !== null ? `${confidence}%` : "N/A"}
+              </span>
             </div>
+
+            {reason && (
+              <div className="mt-4">
+                <h3 className="text-md font-medium text-gray-700 mb-1">Reason</h3>
+                <p className="text-gray-600">{reason}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
